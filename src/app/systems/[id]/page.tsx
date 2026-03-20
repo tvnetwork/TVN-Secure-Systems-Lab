@@ -5,52 +5,31 @@ import { notFound } from "next/navigation";
 import { useSystemStore, SecuritySystem } from "@/store/systemStore";
 import { SystemVisualizer } from "@/components/system/SystemVisualizer";
 import { ControlPanel } from "@/components/system/ControlPanel";
-
-// Mock data (would be fetched from Supabase in a real app)
-const systemDatabase: Record<string, SecuritySystem> = {
-  "fort-knox": {
-    id: "fort-knox",
-    name: "Fort Knox",
-    category: "Vault System",
-    description: "The United States Bullion Depository.",
-    difficulty: "Beginner",
-    layers: {
-      perimeter: ["fences", "armed patrol", "minefields"],
-      detection: ["cameras", "motion sensors", "laser tripwires"],
-      access: ["vault door", "multi-person authentication", "biometrics"],
-      response: ["military response", "lockdown sequence"],
-      asset: ["gold reserves"]
-    }
-  },
-  "cia": {
-    id: "cia",
-    name: "CIA Headquarters",
-    category: "Intelligence System",
-    description: "George Bush Center for Intelligence.",
-    difficulty: "Advanced",
-    layers: {
-      perimeter: ["cybersecurity", "classified access", "physical barricades"],
-      detection: ["global surveillance", "signals intelligence", "insider threat monitoring"],
-      access: ["clearance levels", "polygraph", "SCIFs"],
-      response: ["covert operations", "rapid response teams", "data purge"],
-      asset: ["intelligence data", "classified sources"]
-    }
-  }
-};
+import { supabase } from "@/lib/supabase";
 
 export default function SystemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { setActiveSystem, activeSystem, resetSimulation } = useSystemStore();
 
   useEffect(() => {
-    if (id) {
-      const system = systemDatabase[id];
-      if (system) {
-        setActiveSystem(system);
-      } else {
-        notFound();
+    async function loadSystem() {
+      if (id) {
+        const { data: system, error } = await supabase
+          .from("systems")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error || !system) {
+          console.error("Error fetching system:", error);
+          notFound();
+        } else {
+          setActiveSystem(system as SecuritySystem);
+        }
       }
     }
+
+    loadSystem();
 
     return () => {
       resetSimulation();

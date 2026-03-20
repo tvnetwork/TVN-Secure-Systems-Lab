@@ -1,9 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PlusCircle, Edit3, Settings, ShieldAlert } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+interface SystemData {
+  name: string;
+}
 
 export default function AdminPage() {
+  const [systems, setSystems] = useState<SystemData[]>([]);
+
+  useEffect(() => {
+    async function loadSystems() {
+      const { data, error } = await supabase.from("systems").select("name");
+      if (error) {
+        console.error("Error fetching systems:", error);
+      } else {
+        setSystems((data as SystemData[]) || []);
+      }
+    }
+
+    loadSystems();
+  }, []);
+
   return (
     <main className="min-h-screen pt-24 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -30,11 +51,11 @@ export default function AdminPage() {
               </div>
 
               <div className="space-y-4">
-                {['Fort Knox', 'CIA Headquarters', 'Svalbard Seed Vault'].map((sys, i) => (
+                {systems.map((sys, i) => (
                   <div key={i} className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="w-5 h-5 text-gray-400" />
-                      <span className="font-medium">{sys}</span>
+                      <span className="font-medium">{sys.name}</span>
                     </div>
                     <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
                       <Edit3 className="w-4 h-4" />

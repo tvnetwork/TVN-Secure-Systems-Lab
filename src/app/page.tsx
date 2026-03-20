@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Database, Building2, EyeOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { supabase } from "@/lib/supabase";
+import { SecuritySystem } from "@/store/systemStore";
 
 const categories = [
   { name: "Vault Systems", icon: Database, desc: "Physical security & preservation" },
@@ -12,13 +15,27 @@ const categories = [
   { name: "Preservation Systems", icon: ShieldCheck, desc: "Long-term data & biological storage" },
 ];
 
-const featuredSystems = [
-  { id: "fort-knox", name: "Fort Knox", category: "Vault System", difficulty: "Beginner", desc: "The world&apos;s most famous gold depository." },
-  { id: "cia", name: "CIA", category: "Intelligence System", difficulty: "Advanced", desc: "Global intelligence and covert operations." },
-  { id: "seed-vault", name: "Svalbard Seed Vault", category: "Preservation System", difficulty: "Beginner", desc: "Doomsday vault for global crop diversity." },
-];
-
 export default function Home() {
+  const [featuredSystems, setFeaturedSystems] = useState<SecuritySystem[]>([]);
+
+  useEffect(() => {
+    async function loadFeatured() {
+      const { data, error } = await supabase
+        .from("systems")
+        .select("*")
+        .in('id', ['fort-knox', 'cia', 'seed-vault'])
+        .limit(3);
+
+      if (error) {
+        console.error("Error fetching featured systems:", error);
+      } else {
+        setFeaturedSystems((data as SecuritySystem[]) || []);
+      }
+    }
+
+    loadFeatured();
+  }, []);
+
   return (
     <main className="min-h-screen pt-24 pb-16 px-4">
       {/* Hero Section */}
@@ -99,7 +116,7 @@ export default function Home() {
                   <CardTitle className="group-hover:text-primary/80 transition-colors">{system.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>{system.desc}</CardDescription>
+                  <CardDescription>{system.description}</CardDescription>
                 </CardContent>
               </Card>
             </Link>

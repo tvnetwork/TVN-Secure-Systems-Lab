@@ -1,29 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
-
-const allSystems = [
-  { id: "fort-knox", name: "Fort Knox", category: "Vault System", difficulty: "Beginner", desc: "The world&apos;s most famous gold depository." },
-  { id: "crown-jewels", name: "Crown Jewels", category: "Vault System", difficulty: "Beginner", desc: "Tower of London's high-security jewel house." },
-  { id: "cia", name: "CIA", category: "Intelligence System", difficulty: "Advanced", desc: "Global intelligence and covert operations." },
-  { id: "mossad", name: "Mossad", category: "Intelligence System", difficulty: "Advanced", desc: "Israeli national intelligence agency." },
-  { id: "mss", name: "MSS", category: "Intelligence System", difficulty: "Advanced", desc: "Ministry of State Security, China." },
-  { id: "raw", name: "RAW", category: "Intelligence System", difficulty: "Advanced", desc: "Research and Analysis Wing, India." },
-  { id: "fsb", name: "FSB", category: "Intelligence System", difficulty: "Advanced", desc: "Federal Security Service, Russia." },
-  { id: "isi", name: "ISI", category: "Intelligence System", difficulty: "Advanced", desc: "Inter-Services Intelligence, Pakistan." },
-  { id: "mi6", name: "MI6", category: "Intelligence System", difficulty: "Advanced", desc: "Secret Intelligence Service, UK." },
-  { id: "dgse", name: "DGSE", category: "Intelligence System", difficulty: "Advanced", desc: "General Directorate for External Security, France." },
-  { id: "seed-vault", name: "Svalbard Seed Vault", category: "Preservation System", difficulty: "Beginner", desc: "Doomsday vault for global crop diversity." },
-  { id: "vatican-archives", name: "Vatican Archives", category: "Preservation System", difficulty: "Beginner", desc: "Highly restricted historical archives." },
-  { id: "area-51", name: "Area 51", category: "Isolation System", difficulty: "Advanced", desc: "Highly classified USAF facility." },
-  { id: "north-sentinel", name: "North Sentinel Island", category: "Isolation System", difficulty: "Beginner", desc: "Isolated indigenous population." },
-  { id: "snake-island", name: "Snake Island", category: "Isolation System", difficulty: "Beginner", desc: "Ilha da Queimada Grande, highly restricted due to venomous snakes." },
-  { id: "qin-shi-huang", name: "Qin Shi Huang Tomb", category: "Isolation System", difficulty: "Advanced", desc: "Unexcavated mausoleum with suspected booby traps." },
-];
+import { supabase } from "@/lib/supabase";
+import { SecuritySystem } from "@/store/systemStore";
 
 export default function ExplorePage() {
+  const [systems, setSystems] = useState<SecuritySystem[]>([]);
+
+  useEffect(() => {
+    async function loadSystems() {
+      const { data, error } = await supabase.from("systems").select("*");
+      if (error) {
+        console.error("Error fetching systems:", error);
+      } else {
+        setSystems((data as SecuritySystem[]) || []);
+      }
+    }
+
+    loadSystems();
+  }, []);
+
   return (
     <main className="min-h-screen pt-24 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -37,7 +36,7 @@ export default function ExplorePage() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {allSystems.map((system, i) => (
+          {systems.map((system, i) => (
             <motion.div
               key={system.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -60,7 +59,7 @@ export default function ExplorePage() {
                     <CardTitle className="group-hover:text-primary/80 transition-colors text-lg">{system.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>{system.desc}</CardDescription>
+                    <CardDescription>{system.description}</CardDescription>
                   </CardContent>
                 </Card>
               </Link>
