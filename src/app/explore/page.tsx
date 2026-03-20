@@ -5,14 +5,22 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { supabase } from "@/lib/supabase";
-import { SecuritySystem } from "@/store/systemStore";
+
+interface SecuritySystem {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  difficulty: 'Beginner' | 'Advanced';
+}
 
 export default function ExplorePage() {
   const [systems, setSystems] = useState<SecuritySystem[]>([]);
 
   useEffect(() => {
     async function loadSystems() {
-      const { data, error } = await supabase.from("systems").select("*");
+      const { data, error } = await supabase.from("systems").select("*").order("name");
       if (error) {
         console.error("Error fetching systems:", error);
       } else {
@@ -41,9 +49,9 @@ export default function ExplorePage() {
               key={system.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: Math.min(i * 0.05, 0.5) }}
             >
-              <Link href={`/systems/${system.id}`}>
+              <Link href={`/systems/${system.slug}`}>
                 <Card className="h-full cursor-pointer group flex flex-col">
                   <CardHeader className="flex-grow">
                     <div className="flex justify-between items-start mb-2">
@@ -59,12 +67,18 @@ export default function ExplorePage() {
                     <CardTitle className="group-hover:text-primary/80 transition-colors text-lg">{system.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>{system.description}</CardDescription>
+                    <CardDescription className="line-clamp-3">{system.description}</CardDescription>
                   </CardContent>
                 </Card>
               </Link>
             </motion.div>
           ))}
+
+          {systems.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground p-12 bg-white/5 border border-white/10 rounded-2xl">
+              No systems available in the database.
+            </div>
+          )}
         </div>
       </div>
     </main>

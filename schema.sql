@@ -1,29 +1,53 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create table for systems
 CREATE TABLE systems (
-    id TEXT PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
     category TEXT NOT NULL,
     description TEXT NOT NULL,
     difficulty TEXT NOT NULL CHECK (difficulty IN ('Beginner', 'Advanced')),
+    featured BOOLEAN DEFAULT FALSE,
     layers JSONB NOT NULL DEFAULT '{"perimeter": [], "detection": [], "access": [], "response": [], "asset": []}'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create table for admin settings
+CREATE TABLE admin_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    theme TEXT DEFAULT 'blue'
+);
+
+-- Create table for announcements
+CREATE TABLE announcements (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    message TEXT NOT NULL,
+    active BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create table for features
+CREATE TABLE features (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    enabled BOOLEAN DEFAULT FALSE
+);
+
+-- Insert initial admin settings
+INSERT INTO admin_settings (theme) VALUES ('blue');
+
+-- Insert initial features
+INSERT INTO features (name, enabled) VALUES
+('enable_simulation', true),
+('enable_builder', false);
+
 -- Insert initial data
-INSERT INTO systems (id, name, category, description, difficulty, layers) VALUES
-('fort-knox', 'Fort Knox', 'Vault System', 'The world''s most famous gold depository.', 'Beginner', '{"perimeter": ["fences", "armed patrol", "minefields"], "detection": ["cameras", "motion sensors", "laser tripwires"], "access": ["vault door", "multi-person authentication", "biometrics"], "response": ["military response", "lockdown sequence"], "asset": ["gold reserves"]}'),
-('crown-jewels', 'Crown Jewels', 'Vault System', 'Tower of London''s high-security jewel house.', 'Beginner', '{"perimeter": ["yeoman warders", "waterloo block"], "detection": ["cctv", "motion sensors"], "access": ["bomb proof glass", "steel doors"], "response": ["armed guards", "lockdown"], "asset": ["crown jewels"]}'),
-('cia', 'CIA Headquarters', 'Intelligence System', 'Global intelligence and covert operations.', 'Advanced', '{"perimeter": ["cybersecurity", "classified access", "physical barricades"], "detection": ["global surveillance", "signals intelligence", "insider threat monitoring"], "access": ["clearance levels", "polygraph", "SCIFs"], "response": ["covert operations", "rapid response teams", "data purge"], "asset": ["intelligence data", "classified sources"]}'),
-('mossad', 'Mossad', 'Intelligence System', 'Israeli national intelligence agency.', 'Advanced', '{"perimeter": ["secret location", "cyber defenses"], "detection": ["humint", "sigint"], "access": ["strict vetting", "compartmentalization"], "response": ["katsas", "kidon"], "asset": ["intelligence", "national security"]}'),
-('mss', 'MSS', 'Intelligence System', 'Ministry of State Security, China.', 'Advanced', '{"perimeter": ["state firewall", "physical security"], "detection": ["mass surveillance", "cyber espionage"], "access": ["party loyalty", "security clearance"], "response": ["domestic policing", "cyber attacks"], "asset": ["state secrets", "intellectual property"]}'),
-('raw', 'RAW', 'Intelligence System', 'Research and Analysis Wing, India.', 'Advanced', '{"perimeter": ["cgo complex", "cyber security"], "detection": ["satellite imagery", "humint"], "access": ["background checks", "need to know"], "response": ["special group", "covert ops"], "asset": ["strategic intelligence"]}'),
-('fsb', 'FSB', 'Intelligence System', 'Federal Security Service, Russia.', 'Advanced', '{"perimeter": ["lubyanka", "border control"], "detection": ["domestic surveillance", "cyber monitoring"], "access": ["loyalty tests", "clearances"], "response": ["alpha group", "vympel"], "asset": ["state security", "intelligence"]}'),
-('isi', 'ISI', 'Intelligence System', 'Inter-Services Intelligence, Pakistan.', 'Advanced', '{"perimeter": ["military headquarters", "cyber defenses"], "detection": ["humint", "electronic warfare"], "access": ["military background", "vetting"], "response": ["covert action division", "special forces"], "asset": ["military intelligence", "strategic assets"]}'),
-('mi6', 'MI6', 'Intelligence System', 'Secret Intelligence Service, UK.', 'Advanced', '{"perimeter": ["vauxhall cross", "cyber security"], "detection": ["gchq cooperation", "humint"], "access": ["developed vetting", "polygraphs"], "response": ["special forces support", "covert ops"], "asset": ["foreign intelligence"]}'),
-('dgse', 'DGSE', 'Intelligence System', 'General Directorate for External Security, France.', 'Advanced', '{"perimeter": ["mortier boulevard", "cyber defenses"], "detection": ["frenchelon", "humint"], "access": ["strict vetting", "compartmentalization"], "response": ["action division", "special operations"], "asset": ["national security intel"]}'),
-('seed-vault', 'Svalbard Seed Vault', 'Preservation System', 'Doomsday vault for global crop diversity.', 'Beginner', '{"perimeter": ["permafrost", "remote location", "mountainside"], "detection": ["temperature sensors", "motion cameras"], "access": ["steel doors", "airlocks", "keys"], "response": ["local authorities", "international agreements"], "asset": ["seed samples"]}'),
-('vatican-archives', 'Vatican Archives', 'Preservation System', 'Highly restricted historical archives.', 'Beginner', '{"perimeter": ["vatican city walls", "swiss guard"], "detection": ["cctv", "climate control monitoring"], "access": ["scholarly credentials", "specific requests only"], "response": ["vatican gendarmerie"], "asset": ["historical documents", "papal records"]}'),
-('area-51', 'Area 51', 'Isolation System', 'Highly classified USAF facility.', 'Advanced', '{"perimeter": ["desert isolation", "restricted airspace", "camo dudes"], "detection": ["motion sensors", "radar", "drones"], "access": ["top secret clearance", "janet flights"], "response": ["military police", "deadly force authorized"], "asset": ["experimental aircraft", "classified tech"]}'),
-('north-sentinel', 'North Sentinel Island', 'Isolation System', 'Isolated indigenous population.', 'Beginner', '{"perimeter": ["ocean", "coral reefs"], "detection": ["visual observation by sentinels"], "access": ["indian navy patrols", "exclusion zone"], "response": ["arrows and spears", "legal prosecution"], "asset": ["uncontacted tribe", "pristine environment"]}'),
-('snake-island', 'Snake Island', 'Isolation System', 'Ilha da Queimada Grande, highly restricted due to venomous snakes.', 'Beginner', '{"perimeter": ["ocean", "rocky cliffs"], "detection": ["brazilian navy patrols"], "access": ["research permits only", "medical team required"], "response": ["golden lancehead vipers", "navy interception"], "asset": ["endemic snake population"]}'),
-('qin-shi-huang', 'Qin Shi Huang Tomb', 'Isolation System', 'Unexcavated mausoleum with suspected booby traps.', 'Advanced', '{"perimeter": ["underground location", "terracotta army"], "detection": ["archaeological monitoring", "ground penetrating radar"], "access": ["government restriction", "preservation concerns"], "response": ["mercury rivers (legend)", "booby traps (legend)"], "asset": ["emperor''s remains", "ancient artifacts"]}');
+INSERT INTO systems (name, slug, category, description, difficulty, featured, layers) VALUES
+('Fort Knox', 'fort-knox', 'Vault System', 'The world''s most famous gold depository.', 'Beginner', true, '{"perimeter": ["fences", "armed patrol", "minefields"], "detection": ["cameras", "motion sensors", "laser tripwires"], "access": ["vault door", "multi-person authentication", "biometrics"], "response": ["military response", "lockdown sequence"], "asset": ["gold reserves"]}'),
+('Crown Jewels', 'crown-jewels', 'Vault System', 'Tower of London''s high-security jewel house.', 'Beginner', false, '{"perimeter": ["yeoman warders", "waterloo block"], "detection": ["cctv", "motion sensors"], "access": ["bomb proof glass", "steel doors"], "response": ["armed guards", "lockdown"], "asset": ["crown jewels"]}'),
+('CIA Headquarters', 'cia', 'Intelligence System', 'Global intelligence and covert operations.', 'Advanced', true, '{"perimeter": ["cybersecurity", "classified access", "physical barricades"], "detection": ["global surveillance", "signals intelligence", "insider threat monitoring"], "access": ["clearance levels", "polygraph", "SCIFs"], "response": ["covert operations", "rapid response teams", "data purge"], "asset": ["intelligence data", "classified sources"]}'),
+('Mossad', 'mossad', 'Intelligence System', 'Israeli national intelligence agency.', 'Advanced', false, '{"perimeter": ["secret location", "cyber defenses"], "detection": ["humint", "sigint"], "access": ["strict vetting", "compartmentalization"], "response": ["katsas", "kidon"], "asset": ["intelligence", "national security"]}'),
+('Svalbard Seed Vault', 'seed-vault', 'Preservation System', 'Doomsday vault for global crop diversity.', 'Beginner', true, '{"perimeter": ["permafrost", "remote location", "mountainside"], "detection": ["temperature sensors", "motion cameras"], "access": ["steel doors", "airlocks", "keys"], "response": ["local authorities", "international agreements"], "asset": ["seed samples"]}'),
+('Area 51', 'area-51', 'Isolation System', 'Highly classified USAF facility.', 'Advanced', false, '{"perimeter": ["desert isolation", "restricted airspace", "camo dudes"], "detection": ["motion sensors", "radar", "drones"], "access": ["top secret clearance", "janet flights"], "response": ["military police", "deadly force authorized"], "asset": ["experimental aircraft", "classified tech"]}');

@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, use } from "react";
+import { useEffect, useState, use } from "react";
 import { notFound } from "next/navigation";
 import { useSystemStore, SecuritySystem } from "@/store/systemStore";
 import { SystemVisualizer } from "@/components/system/SystemVisualizer";
 import { ControlPanel } from "@/components/system/ControlPanel";
 import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 export default function SystemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { setActiveSystem, activeSystem, resetSimulation } = useSystemStore();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadSystem() {
       if (id) {
+        // Try to fetch by slug first, fallback to id if it's a UUID
         const { data: system, error } = await supabase
           .from("systems")
           .select("*")
-          .eq("id", id)
+          .or(`slug.eq.${id},id.eq.${id}`)
+          .limit(1)
           .single();
 
         if (error || !system) {
@@ -26,6 +30,7 @@ export default function SystemDetailPage({ params }: { params: Promise<{ id: str
         } else {
           setActiveSystem(system as SecuritySystem);
         }
+        setLoading(false);
       }
     }
 
@@ -36,8 +41,17 @@ export default function SystemDetailPage({ params }: { params: Promise<{ id: str
     };
   }, [id, setActiveSystem, resetSimulation]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-muted-foreground gap-4">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <p>Initializing secure system environment...</p>
+      </div>
+    );
+  }
+
   if (!activeSystem) {
-    return <div className="min-h-screen pt-24 px-4 flex items-center justify-center">Loading system data...</div>;
+      return null;
   }
 
   return (

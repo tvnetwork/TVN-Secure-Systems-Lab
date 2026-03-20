@@ -6,7 +6,15 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, Database, Building2, EyeOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { supabase } from "@/lib/supabase";
-import { SecuritySystem } from "@/store/systemStore";
+
+interface SecuritySystem {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  difficulty: 'Beginner' | 'Advanced';
+}
 
 const categories = [
   { name: "Vault Systems", icon: Database, desc: "Physical security & preservation" },
@@ -23,7 +31,8 @@ export default function Home() {
       const { data, error } = await supabase
         .from("systems")
         .select("*")
-        .in('id', ['fort-knox', 'cia', 'seed-vault'])
+        .eq('featured', true)
+        .order('created_at', { ascending: false })
         .limit(3);
 
       if (error) {
@@ -100,7 +109,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {featuredSystems.map((system) => (
-            <Link href={`/systems/${system.id}`} key={system.id}>
+            <Link href={`/systems/${system.slug}`} key={system.id}>
               <Card className="h-full cursor-pointer group">
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
@@ -121,6 +130,11 @@ export default function Home() {
               </Card>
             </Link>
           ))}
+          {featuredSystems.length === 0 && (
+            <div className="col-span-3 text-center text-muted-foreground p-8 bg-white/5 border border-white/10 rounded-2xl">
+              No featured systems currently available.
+            </div>
+          )}
         </div>
       </section>
     </main>
