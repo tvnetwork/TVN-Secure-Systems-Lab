@@ -1,68 +1,120 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { PlusCircle, Edit3, Settings, ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { Edit3, Trash2, ShieldAlert, Star, StarOff, PlusCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+interface SystemData {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  featured: boolean;
+}
 
 export default function AdminPage() {
+  const [systems, setSystems] = useState<SystemData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSystems = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("systems").select("id, name, slug, category, featured").order("created_at", { ascending: false });
+    if (!error && data) {
+      setSystems(data);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchSystems();
+  }, [fetchSystems]);
+
+  async function toggleFeatured(id: string, currentStatus: boolean) {
+    const { error } = await supabase.from("systems").update({ featured: !currentStatus }).eq("id", id);
+    if (!error) {
+      setSystems(systems.map(s => s.id === id ? { ...s, featured: !currentStatus } : s));
+    }
+  }
+
+  async function deleteSystem(id: string) {
+    if (confirm("Are you sure you want to delete this system?")) {
+      const { error } = await supabase.from("systems").delete().eq("id", id);
+      if (!error) {
+        setSystems(systems.filter(s => s.id !== id));
+      }
+    }
+  }
+
   return (
-    <main className="min-h-screen pt-24 pb-16 px-4">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
-        >
-          <h1 className="text-4xl font-bold mb-4 flex items-center gap-3">
-            <Settings className="w-8 h-8 text-primary" />
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground text-lg">Manage systems, upload assets, and control platform settings.</p>
-        </motion.div>
+    <div className="max-w-6xl mx-auto space-y-8">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Systems Management</h1>
+          <p className="text-muted-foreground mt-1">Create, edit, and organize secure environments.</p>
+        </div>
+        <Link href="/admin/systems/create" className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-colors">
+          <PlusCircle className="w-4 h-4" /> New System
+        </Link>
+      </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <div className="p-6 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold">System Database</h2>
-                <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-                  <PlusCircle className="w-4 h-4" /> Add New System
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {['Fort Knox', 'CIA Headquarters', 'Svalbard Seed Vault'].map((sys, i) => (
-                  <div key={i} className="flex justify-between items-center p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
+      <div className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-muted-foreground">Loading systems...</div>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-white/10 bg-white/5">
+                <th className="p-4 font-medium text-muted-foreground">Name</th>
+                <th className="p-4 font-medium text-muted-foreground">Category</th>
+                <th className="p-4 font-medium text-muted-foreground text-center">Featured</th>
+                <th className="p-4 font-medium text-muted-foreground text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {systems.map((sys) => (
+                <tr key={sys.id} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4">
                     <div className="flex items-center gap-3">
                       <ShieldAlert className="w-5 h-5 text-gray-400" />
-                      <span className="font-medium">{sys}</span>
+                      <div>
+                        <div className="font-medium text-white">{sys.name}</div>
+                        <div className="text-xs text-muted-foreground">/{sys.slug}</div>
+                      </div>
                     </div>
-                    <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                      <Edit3 className="w-4 h-4" />
+                  </td>
+                  <td className="p-4 text-gray-300">
+                    <span className="px-2.5 py-1 rounded-full bg-white/10 text-xs font-medium">{sys.category}</span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => toggleFeatured(sys.id, sys.featured)}
+                      className={`p-2 rounded-lg transition-colors ${sys.featured ? 'text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20' : 'text-gray-500 hover:bg-white/10'}`}
+                      title={sys.featured ? "Unfeature" : "Feature"}
+                    >
+                      {sys.featured ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
                     </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="p-6 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md">
-              <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-              <div className="space-y-3">
-                <button className="w-full text-left px-4 py-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
-                  Upload Visual Assets
-                </button>
-                <button className="w-full text-left px-4 py-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
-                  Manage Featured Systems
-                </button>
-                <button className="w-full text-left px-4 py-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors">
-                  System Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link href={`/admin/systems/${sys.id}/edit`} className="p-2 rounded-lg text-blue-400 bg-blue-400/10 hover:bg-blue-400/20 transition-colors">
+                        <Edit3 className="w-4 h-4" />
+                      </Link>
+                      <button onClick={() => deleteSystem(sys.id)} className="p-2 rounded-lg text-red-400 bg-red-400/10 hover:bg-red-400/20 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {systems.length === 0 && (
+                <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No systems found. Create one to get started.</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
-    </main>
+    </div>
   );
 }

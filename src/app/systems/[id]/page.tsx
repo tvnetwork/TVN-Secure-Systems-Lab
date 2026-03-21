@@ -1,64 +1,57 @@
 "use client";
 
-import { useEffect, use } from "react";
+import { useEffect, useState, use } from "react";
 import { notFound } from "next/navigation";
 import { useSystemStore, SecuritySystem } from "@/store/systemStore";
 import { SystemVisualizer } from "@/components/system/SystemVisualizer";
 import { ControlPanel } from "@/components/system/ControlPanel";
-
-// Mock data (would be fetched from Supabase in a real app)
-const systemDatabase: Record<string, SecuritySystem> = {
-  "fort-knox": {
-    id: "fort-knox",
-    name: "Fort Knox",
-    category: "Vault System",
-    description: "The United States Bullion Depository.",
-    difficulty: "Beginner",
-    layers: {
-      perimeter: ["fences", "armed patrol", "minefields"],
-      detection: ["cameras", "motion sensors", "laser tripwires"],
-      access: ["vault door", "multi-person authentication", "biometrics"],
-      response: ["military response", "lockdown sequence"],
-      asset: ["gold reserves"]
-    }
-  },
-  "cia": {
-    id: "cia",
-    name: "CIA Headquarters",
-    category: "Intelligence System",
-    description: "George Bush Center for Intelligence.",
-    difficulty: "Advanced",
-    layers: {
-      perimeter: ["cybersecurity", "classified access", "physical barricades"],
-      detection: ["global surveillance", "signals intelligence", "insider threat monitoring"],
-      access: ["clearance levels", "polygraph", "SCIFs"],
-      response: ["covert operations", "rapid response teams", "data purge"],
-      asset: ["intelligence data", "classified sources"]
-    }
-  }
-};
+import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 export default function SystemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { setActiveSystem, activeSystem, resetSimulation } = useSystemStore();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const system = systemDatabase[id];
-      if (system) {
-        setActiveSystem(system);
-      } else {
-        notFound();
+    async function loadSystem() {
+      if (id) {
+        // Try to fetch by slug first, fallback to id if it's a UUID
+        const { data: system, error } = await supabase
+          .from("systems")
+          .select("*")
+          .or(`slug.eq.${id},id.eq.${id}`)
+          .limit(1)
+          .single();
+
+        if (error || !system) {
+          console.error("Error fetching system:", error);
+          notFound();
+        } else {
+          setActiveSystem(system as SecuritySystem);
+        }
+        setLoading(false);
       }
     }
+
+    loadSystem();
 
     return () => {
       resetSimulation();
     };
   }, [id, setActiveSystem, resetSimulation]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-muted-foreground gap-4">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <p>Initializing secure system environment...</p>
+      </div>
+    );
+  }
+
   if (!activeSystem) {
-    return <div className="min-h-screen pt-24 px-4 flex items-center justify-center">Loading system data...</div>;
+      return null;
   }
 
   return (

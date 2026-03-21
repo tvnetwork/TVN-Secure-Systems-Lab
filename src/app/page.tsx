@@ -1,9 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Database, Building2, EyeOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { supabase } from "@/lib/supabase";
+
+interface SecuritySystem {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  difficulty: 'Beginner' | 'Advanced';
+}
 
 const categories = [
   { name: "Vault Systems", icon: Database, desc: "Physical security & preservation" },
@@ -12,13 +23,28 @@ const categories = [
   { name: "Preservation Systems", icon: ShieldCheck, desc: "Long-term data & biological storage" },
 ];
 
-const featuredSystems = [
-  { id: "fort-knox", name: "Fort Knox", category: "Vault System", difficulty: "Beginner", desc: "The world&apos;s most famous gold depository." },
-  { id: "cia", name: "CIA", category: "Intelligence System", difficulty: "Advanced", desc: "Global intelligence and covert operations." },
-  { id: "seed-vault", name: "Svalbard Seed Vault", category: "Preservation System", difficulty: "Beginner", desc: "Doomsday vault for global crop diversity." },
-];
-
 export default function Home() {
+  const [featuredSystems, setFeaturedSystems] = useState<SecuritySystem[]>([]);
+
+  useEffect(() => {
+    async function loadFeatured() {
+      const { data, error } = await supabase
+        .from("systems")
+        .select("*")
+        .eq('featured', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error("Error fetching featured systems:", error);
+      } else {
+        setFeaturedSystems((data as SecuritySystem[]) || []);
+      }
+    }
+
+    loadFeatured();
+  }, []);
+
   return (
     <main className="min-h-screen pt-24 pb-16 px-4">
       {/* Hero Section */}
@@ -83,7 +109,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {featuredSystems.map((system) => (
-            <Link href={`/systems/${system.id}`} key={system.id}>
+            <Link href={`/systems/${system.slug}`} key={system.id}>
               <Card className="h-full cursor-pointer group">
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
@@ -99,11 +125,16 @@ export default function Home() {
                   <CardTitle className="group-hover:text-primary/80 transition-colors">{system.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>{system.desc}</CardDescription>
+                  <CardDescription>{system.description}</CardDescription>
                 </CardContent>
               </Card>
             </Link>
           ))}
+          {featuredSystems.length === 0 && (
+            <div className="col-span-3 text-center text-muted-foreground p-8 bg-white/5 border border-white/10 rounded-2xl">
+              No featured systems currently available.
+            </div>
+          )}
         </div>
       </section>
     </main>
